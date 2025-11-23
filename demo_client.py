@@ -6,10 +6,14 @@ from mcp.client.stdio import stdio_client
 async def run():
     print("\n--- Protocol-Native Agent Demo ---")
     
-    # Get topic from args or input
+    # Get topic and optional API key from args
+    api_key = None
     if len(sys.argv) > 1:
         topic = sys.argv[1]
         print(f"Using topic from arguments: {topic}")
+        if len(sys.argv) > 2:
+            api_key = sys.argv[2]
+            print("Using API key from arguments")
     else:
         topic = input("Enter the topic you want to research: ").strip()
 
@@ -42,7 +46,11 @@ async def run():
             print("[Client] Waiting for agents to complete work (this may take a few seconds)...\n")
             
             try:
-                result = await session.call_tool("call_agent", arguments={"task": topic})
+                args = {"task": topic}
+                if api_key:
+                    args["api_key"] = api_key
+                    
+                result = await session.call_tool("call_agent", arguments=args)
                 print("\n" + "="*40)
                 print("       FINAL AGENT OUTPUT       ")
                 print("="*40 + "\n")

@@ -4,7 +4,7 @@ import path from 'path';
 
 export async function POST(request: Request) {
     try {
-        const { topic } = await request.json();
+        const { topic, apiKey } = await request.json();
 
         if (!topic) {
             return NextResponse.json({ error: 'Topic is required' }, { status: 400 });
@@ -20,7 +20,12 @@ export async function POST(request: Request) {
         console.log(`Script: ${scriptPath}`);
 
         // Spawn the python process
-        const child = spawn(pythonPath, [scriptPath, topic], {
+        const args = [scriptPath, topic];
+        if (apiKey) {
+            args.push(apiKey);
+        }
+
+        const child = spawn(pythonPath, args, {
             cwd: projectRoot,
             stdio: 'ignore' // We don't need the output, events will be streamed via WebSocket
         });

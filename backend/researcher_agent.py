@@ -47,13 +47,19 @@ active_connections: List[WebSocket] = []
 class ResearcherAgent:
     """Researches topics and delegates drafting to Writer Agent via A2A."""
     
-    def __init__(self, topic: str):
+    def __init__(self, topic: str, api_key: str = None):
         self.topic = topic
+        self.api_key = api_key
     
     async def research(self) -> str:
         """Generate research notes using OpenAI."""
-        if not openai_client:
-            raise ValueError("OPENAI_API_KEY not found.")
+        client = openai_client
+        if self.api_key:
+            print(f"[Researcher] Using provided API key for request")
+            client = AsyncOpenAI(api_key=self.api_key)
+            
+        if not client:
+            raise ValueError("OPENAI_API_KEY not found in env or request.")
         
         print(f"[Researcher] Researching: {self.topic}")
         
@@ -70,7 +76,10 @@ class ResearcherAgent:
             status="pending"
         )
         
-        response = await openai_client.chat.completions.create(
+        # Artificial delay for visualization
+        await asyncio.sleep(2.0)
+        
+        response = await client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": "You are a senior researcher. Provide 4-5 key bullet points about the requested topic."},
@@ -118,12 +127,14 @@ class ResearcherAgent:
             # Construct message for Writer
             content = f"Topic: {self.topic}\nNotes:\n{notes}"
             
+            parts = [{'kind': 'text', 'text': content}]
+            if self.api_key:
+                parts.append({'kind': 'text', 'text': f"__API_KEY__:{self.api_key}"})
+            
             send_message_payload = {
                 'message': {
                     'role': 'user',
-                    'parts': [
-                        {'kind': 'text', 'text': content}
-                    ],
+                    'parts': parts,
                     'messageId': uuid4().hex,
                 },
             }
@@ -190,16 +201,21 @@ class ResearcherAgentExecutor(AgentExecutor):
         context: RequestContext,
         event_queue: EventQueue,
     ) -> None:
-        # Extract topic
+        # Extract topic and API key
         topic = ""
+        api_key = None
         message_dict = None
+        
         if hasattr(context, 'message') and context.message:
             message_dict = context.message.model_dump()
             for part in context.message.parts:
                 part_dict = part.model_dump() if hasattr(part, 'model_dump') else {}
                 if 'text' in part_dict:
-                    topic = part_dict['text']
-                    break
+                    text = part_dict['text']
+                    if text.startswith("__API_KEY__:"):
+                        api_key = text.replace("__API_KEY__:", "").strip()
+                    else:
+                        topic = text
         
         # Broadcast RPC request received (from MCP)
         await broadcast_event(
@@ -219,9 +235,11 @@ class ResearcherAgentExecutor(AgentExecutor):
             return
         
         print(f"[Researcher] Received topic: '{topic}'")
+        if api_key:
+            print(f"[Researcher] Received dynamic API key")
         
         try:
-            agent = ResearcherAgent(topic)
+            agent = ResearcherAgent(topic, api_key)
             
             # Step 1: Research
             notes = await agent.research()

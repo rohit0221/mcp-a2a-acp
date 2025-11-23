@@ -34,22 +34,26 @@ def emit_event(event_type: str, data: dict, hop: str = "unknown", transport: str
     broadcast_event_safe(event)
 
 @mcp.tool()
-async def call_agent(task: str) -> str:
+async def call_agent(task: str, api_key: str = None) -> str:
     """
     Delegates a complex task to the backend agent network via A2A Protocol.
     
     Args:
         task: A natural language description of the task (e.g., "Research vector databases").
+        api_key: Optional OpenAI API key to use for this request.
     """
     print(f"[MCP] Received tool call: call_agent with task='{task}'", file=sys.stderr)
     
     # Emit tool call event
     emit_event(
         "mcp_tool_call", 
-        {"tool": "call_agent", "arguments": {"task": task}},
+        {"tool": "call_agent", "arguments": {"task": task, "has_api_key": bool(api_key)}},
         hop="client→mcp",
         transport="stdio"
     )
+    
+    # Artificial delay to allow the visualization to show the "Client -> MCP" step
+    await asyncio.sleep(2.5)
     
     try:
         async with httpx.AsyncClient(timeout=120.0) as httpx_client:
@@ -68,12 +72,16 @@ async def call_agent(task: str) -> str:
             )
             
             # Construct message
+            parts = [{'kind': 'text', 'text': task}]
+            
+            # Inject API key as a special system part if provided
+            if api_key:
+                parts.append({'kind': 'text', 'text': f"__API_KEY__:{api_key}"})
+            
             send_message_payload = {
                 'message': {
                     'role': 'user',
-                    'parts': [
-                        {'kind': 'text', 'text': task}
-                    ],
+                    'parts': parts,
                     'messageId': uuid4().hex,
                 },
             }
@@ -133,7 +141,10 @@ async def call_agent(task: str) -> str:
             # Emit tool result event
             emit_event(
                 "mcp_tool_result",
-                {"content_length": len(result_text)},
+                {
+                    "content_length": len(result_text),
+                    "content": result_text
+                },
                 hop="mcp→client",
                 transport="stdio"
             )

@@ -39,13 +39,19 @@ active_connections: List[WebSocket] = []
 class WriterAgent:
     """Drafts markdown reports from topic + notes."""
     
-    def __init__(self, topic: str, notes: str):
+    def __init__(self, topic: str, notes: str, api_key: str = None):
         self.topic = topic
         self.notes = notes
+        self.api_key = api_key
     
     async def draft(self) -> str:
-        if not openai_client:
-            raise ValueError("OPENAI_API_KEY not found.")
+        client = openai_client
+        if self.api_key:
+            print(f"[Writer] Using provided API key for request")
+            client = AsyncOpenAI(api_key=self.api_key)
+            
+        if not client:
+            raise ValueError("OPENAI_API_KEY not found in env or request.")
         
         print(f"[Writer] Drafting report for: {self.topic}")
         
@@ -63,7 +69,10 @@ class WriterAgent:
             status="pending"
         )
         
-        response = await openai_client.chat.completions.create(
+        # Artificial delay for visualization
+        await asyncio.sleep(2.0)
+        
+        response = await client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": "You are a technical writer. Create a markdown report based on the input."},
@@ -97,16 +106,21 @@ class WriterAgentExecutor(AgentExecutor):
         context: RequestContext,
         event_queue: EventQueue,
     ) -> None:
-        # Extract message content
+        # Extract message content and API key
         content = ""
+        api_key = None
         message_dict = None
+        
         if hasattr(context, 'message') and context.message:
             message_dict = context.message.model_dump()
             for part in context.message.parts:
                 part_dict = part.model_dump() if hasattr(part, 'model_dump') else {}
                 if 'text' in part_dict:
-                    content = part_dict['text']
-                    break
+                    text = part_dict['text']
+                    if text.startswith("__API_KEY__:"):
+                        api_key = text.replace("__API_KEY__:", "").strip()
+                    elif not content: # Only take the first non-key text part as content
+                        content = text
         
         # Broadcast RPC request received
         print(f"[Writer] Broadcasting rpc_request event...")
@@ -138,9 +152,11 @@ class WriterAgentExecutor(AgentExecutor):
         
         print(f"[Writer] Received topic: '{topic}'")
         print(f"[Writer] Notes length: {len(notes)}")
+        if api_key:
+            print(f"[Writer] Received dynamic API key")
         
         try:
-            agent = WriterAgent(topic, notes)
+            agent = WriterAgent(topic, notes, api_key)
             report = await agent.draft()
             
             # Broadcast RPC response sent

@@ -15,7 +15,10 @@ export function useEventStream() {
         MCP: false,
     });
 
+    const [lastEvent, setLastEvent] = useState<AgentEvent | null>(null);
+
     const addEvent = useCallback((event: AgentEvent) => {
+        setLastEvent(event);
         setEvents((prev) => {
             // Avoid duplicates if possible (by ID)
             if (prev.some(e => e.id === event.id)) return prev;
@@ -60,5 +63,5 @@ export function useEventStream() {
 
     const clearEvents = useCallback(() => setEvents([]), []);
 
-    return { events, isConnected, clearEvents };
+    return { events, isConnected, clearEvents, lastEvent };
 }

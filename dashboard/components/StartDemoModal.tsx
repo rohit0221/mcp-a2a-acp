@@ -8,6 +8,7 @@ interface StartDemoModalProps {
 
 export function StartDemoModal({ isOpen, onClose }: StartDemoModalProps) {
     const [topic, setTopic] = useState('');
+    const [apiKey, setApiKey] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
     if (!isOpen) return null;
@@ -21,7 +22,7 @@ export function StartDemoModal({ isOpen, onClose }: StartDemoModalProps) {
             await fetch('/api/demo', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ topic }),
+                body: JSON.stringify({ topic, apiKey }),
             });
             onClose();
             setTopic('');
@@ -43,7 +44,7 @@ export function StartDemoModal({ isOpen, onClose }: StartDemoModalProps) {
                 </div>
 
                 <form onSubmit={handleSubmit}>
-                    <div className="mb-6">
+                    <div className="mb-4">
                         <label className="block text-sm font-medium text-slate-400 mb-2">
                             Research Topic
                         </label>
@@ -55,6 +56,22 @@ export function StartDemoModal({ isOpen, onClose }: StartDemoModalProps) {
                             className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
                             autoFocus
                         />
+                    </div>
+
+                    <div className="mb-6">
+                        <label className="block text-sm font-medium text-slate-400 mb-2">
+                            OpenAI API Key (Optional)
+                        </label>
+                        <input
+                            type="password"
+                            value={apiKey}
+                            onChange={(e) => setApiKey(e.target.value)}
+                            placeholder="sk-..."
+                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all font-mono text-sm"
+                        />
+                        <p className="text-[10px] text-slate-500 mt-2">
+                            Leave empty to use the server's configured key.
+                        </p>
                     </div>
 
                     <div className="flex justify-end gap-3">

@@ -17,11 +17,18 @@ import {
 import { StartDemoModal } from '@/components/StartDemoModal';
 import { StepExplainer } from '@/components/StepExplainer';
 
+import { FinalReportModal } from '@/components/FinalReportModal';
+
 export default function Dashboard() {
-  const { events, isConnected, clearEvents } = useEventStream();
+  const { lastEvent, isConnected, clearEvents } = useEventStream();
+  const [events, setEvents] = useState<AgentEvent[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<AgentEvent | null>(null);
   const [activeEvent, setActiveEvent] = useState<AgentEvent | undefined>(undefined);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDemoModalOpen, setIsDemoModalOpen] = useState(false);
+
+  // Final Report State
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [finalReportContent, setFinalReportContent] = useState('');
 
   // Auto-select latest event for flow diagram animation ONLY if no event is explicitly selected
   useEffect(() => {
@@ -36,12 +43,38 @@ export default function Dashboard() {
     }
   }, [events, selectedEvent]);
 
+  useEffect(() => {
+    if (lastEvent) {
+      setEvents((prev) => {
+        // Prevent duplicates if lastEvent didn't change (though hook handles this, safety check)
+        if (prev.some(e => e.id === lastEvent.id)) return prev;
+        return [...prev, lastEvent];
+      });
+
+      // Set active event for visualization
+      setActiveEvent(lastEvent);
+
+      // Check for final output
+      if (lastEvent.hop === 'mcp→client' && lastEvent.type === 'mcp_tool_result') {
+        if (lastEvent.data && lastEvent.data.content) {
+          setFinalReportContent(lastEvent.data.content);
+          setIsReportModalOpen(true);
+        }
+      }
+    }
+  }, [lastEvent]);
+
   // If an event is selected, force it as the active event for the diagram
   const displayEvent = selectedEvent || activeEvent;
 
   return (
     <div className="h-screen w-screen bg-slate-950 text-slate-200 flex flex-col overflow-hidden font-sans selection:bg-blue-500/30">
-      <StartDemoModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+      <StartDemoModal isOpen={isDemoModalOpen} onClose={() => setIsDemoModalOpen(false)} />
+      <FinalReportModal
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+        content={finalReportContent}
+      />
 
       {/* Header */}
       <header className="h-16 border-b border-slate-800 flex items-center justify-between px-6 bg-slate-900/80 backdrop-blur-md z-50 shrink-0">
@@ -78,7 +111,7 @@ export default function Dashboard() {
               <Trash2 className="w-4 h-4" />
             </button>
             <button
-              onClick={() => setIsModalOpen(true)}
+              onClick={() => setIsDemoModalOpen(true)}
               className="flex items-center gap-2 bg-white text-slate-950 px-4 py-2 rounded-lg text-sm font-bold hover:bg-blue-50 transition-all shadow-lg shadow-blue-900/10 active:scale-95"
             >
               <Play className="w-4 h-4 text-blue-600" />

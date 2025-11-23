@@ -73,42 +73,66 @@ export function FlowDiagram({ activeEvent, isConnected }: FlowDiagramProps) {
                 <Connection from="WRITER" to="OPENAI" activeEvent={activeEvent} transport="http" />
 
                 {/* Nodes (Rendered via foreignObject to stay in sync with SVG coordinates) */}
-                {Object.entries(NODES).map(([key, node]) => (
-                    <foreignObject
-                        key={key}
-                        x={node.x - (NODE_WIDTH / 2)}
-                        y={node.y - (NODE_HEIGHT / 2)}
-                        width={NODE_WIDTH}
-                        height={NODE_HEIGHT}
-                        className="overflow-visible" // Allow shadows/animations to spill out
-                    >
-                        <motion.div
-                            className="w-full h-full rounded-2xl border-2 flex flex-col items-center justify-center font-bold text-base shadow-2xl backdrop-blur-md"
-                            style={{
-                                backgroundColor: 'rgba(30, 41, 59, 0.9)',
-                                borderColor: getNodeColor(key),
-                                color: '#f1f5f9'
-                            }}
-                            animate={{
-                                scale: activeEvent?.source === key ? 1.1 : 1,
-                                borderColor: getNodeColor(key),
-                                boxShadow: activeEvent?.source === key ? '0 0 40px rgba(59, 130, 246, 0.5)' : '0 10px 15px -3px rgba(0, 0, 0, 0.5)'
-                            }}
-                        >
-                            <span className="z-10 text-lg tracking-wide">{node.label}</span>
+                {Object.entries(NODES).map(([key, node]) => {
+                    // Determine if this node is currently "working"
+                    // Simple heuristic: if the active event is directed TO this node, or if it's the source of an outgoing request
+                    // But actually, if 'client->mcp', MCP is receiving.
+                    // Let's use the 'target' of the active hop.
+                    const targetNode = activeEvent?.hop?.split('→')[1]?.toUpperCase();
+                    const isTarget = targetNode === key;
+                    const isSource = activeEvent?.source === key;
 
-                            {/* Status Dot */}
-                            {key !== 'CLIENT' && key !== 'OPENAI' && (
-                                <div className="absolute top-3 right-3 w-3 h-3 rounded-full"
-                                    style={{
-                                        backgroundColor: isConnected[key as keyof typeof isConnected] ? '#10b981' : '#ef4444',
-                                        boxShadow: isConnected[key as keyof typeof isConnected] ? '0 0 10px #10b981' : 'none'
-                                    }}
-                                />
-                            )}
-                        </motion.div>
-                    </foreignObject>
-                ))}
+                    // Show spinner if this node is the target of the current event (it's processing the request)
+                    // OR if it's the source of a 'pending' event (waiting for response) - though usually that means the *other* node is working.
+                    // Let's stick to: If event is A->B, then B is "active/receiving".
+                    const isWorking = isTarget;
+
+                    return (
+                        <foreignObject
+                            key={key}
+                            x={node.x - (NODE_WIDTH / 2)}
+                            y={node.y - (NODE_HEIGHT / 2)}
+                            width={NODE_WIDTH}
+                            height={NODE_HEIGHT}
+                            className="overflow-visible" // Allow shadows/animations to spill out
+                        >
+                            <motion.div
+                                className="w-full h-full rounded-2xl border-2 flex flex-col items-center justify-center font-bold text-base shadow-2xl backdrop-blur-md relative"
+                                style={{
+                                    backgroundColor: 'rgba(30, 41, 59, 0.9)',
+                                    borderColor: getNodeColor(key),
+                                    color: '#f1f5f9'
+                                }}
+                                animate={{
+                                    scale: isWorking ? 1.1 : 1,
+                                    borderColor: getNodeColor(key),
+                                    boxShadow: isWorking ? '0 0 40px rgba(59, 130, 246, 0.5)' : '0 10px 15px -3px rgba(0, 0, 0, 0.5)'
+                                }}
+                            >
+                                <span className="z-10 text-lg tracking-wide flex items-center gap-2">
+                                    {node.label}
+                                    {isWorking && (
+                                        <motion.div
+                                            animate={{ rotate: 360 }}
+                                            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                                            className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full"
+                                        />
+                                    )}
+                                </span>
+
+                                {/* Status Dot */}
+                                {key !== 'CLIENT' && key !== 'OPENAI' && (
+                                    <div className="absolute top-3 right-3 w-3 h-3 rounded-full"
+                                        style={{
+                                            backgroundColor: isConnected[key as keyof typeof isConnected] ? '#10b981' : '#ef4444',
+                                            boxShadow: isConnected[key as keyof typeof isConnected] ? '0 0 10px #10b981' : 'none'
+                                        }}
+                                    />
+                                )}
+                            </motion.div>
+                        </foreignObject>
+                    )
+                })}
             </svg>
         </div>
     );
