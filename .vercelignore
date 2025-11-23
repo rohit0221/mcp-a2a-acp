@@ -1,0 +1,9 @@
+# Python backend files (not used in Vercel deployment)
+backend/
+mcp_server/
+*.py
+requirements.txt
+render.yaml
+.venv/
+__pycache__/
+*.pyc
