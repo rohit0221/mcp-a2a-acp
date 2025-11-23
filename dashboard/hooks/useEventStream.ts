@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { AgentEvent } from '@/lib/types';
+import { SAMPLE_EVENTS } from '@/lib/sampleEvents';
 
 const WS_URLS = {
     WRITER: 'ws://localhost:8002/events',
@@ -7,12 +8,18 @@ const WS_URLS = {
     MCP: 'ws://localhost:9000/events',
 };
 
+// Check if we're in demo mode (deployed without backend)
+const IS_DEMO_MODE = typeof window !== 'undefined' &&
+    (window.location.hostname.includes('vercel.app') ||
+        window.location.hostname.includes('netlify.app') ||
+        process.env.NEXT_PUBLIC_DEMO_MODE === 'true');
+
 export function useEventStream() {
     const [events, setEvents] = useState<AgentEvent[]>([]);
     const [isConnected, setIsConnected] = useState({
-        WRITER: false,
-        RESEARCHER: false,
-        MCP: false,
+        WRITER: IS_DEMO_MODE,
+        RESEARCHER: IS_DEMO_MODE,
+        MCP: IS_DEMO_MODE,
     });
 
     const [lastEvent, setLastEvent] = useState<AgentEvent | null>(null);
@@ -28,7 +35,15 @@ export function useEventStream() {
         });
     }, []);
 
+    // Demo mode: Simulate events
     useEffect(() => {
+        if (IS_DEMO_MODE) {
+            console.log('[Demo Mode] Using sample events');
+            // Don't auto-play, wait for user to click "Start Demo"
+            return;
+        }
+
+        // Production mode: WebSocket connections
         const connections: WebSocket[] = [];
 
         Object.entries(WS_URLS).forEach(([key, url]) => {
@@ -63,5 +78,18 @@ export function useEventStream() {
 
     const clearEvents = useCallback(() => setEvents([]), []);
 
-    return { events, isConnected, clearEvents, lastEvent };
+    const playDemoEvents = useCallback(() => {
+        if (!IS_DEMO_MODE) return;
+
+        console.log('[Demo Mode] Playing sample events...');
+        setEvents([]);
+
+        SAMPLE_EVENTS.forEach((event, index) => {
+            setTimeout(() => {
+                addEvent(event);
+            }, index * 3000); // 3 seconds between each event
+        });
+    }, [addEvent]);
+
+    return { events, isConnected, clearEvents, lastEvent, playDemoEvents, isDemoMode: IS_DEMO_MODE };
 }

@@ -1,0 +1,44 @@
+services:
+  # Next.js Dashboard
+  - type: web
+    name: a2a-dashboard
+    runtime: node
+    buildCommand: cd dashboard && npm install && npm run build
+    startCommand: cd dashboard && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: RESEARCHER_URL
+        fromService:
+          type: web
+          name: researcher-agent
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: WRITER_URL
+        fromService:
+          type: web
+          name: writer-agent
+          envVarKey: RENDER_EXTERNAL_URL
+
+  # Researcher Agent
+  - type: web
+    name: researcher-agent
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python backend/researcher_agent.py
+    envVars:
+      - key: PORT
+        value: 8001
+      - key: OPENAI_API_KEY
+        sync: false  # You'll add this manually in Render dashboard
+
+  # Writer Agent
+  - type: web
+    name: writer-agent
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python backend/writer_agent.py
+    envVars:
+      - key: PORT
+        value: 8002
+      - key: OPENAI_API_KEY
+        sync: false

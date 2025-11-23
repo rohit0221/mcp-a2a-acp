@@ -20,7 +20,7 @@ import { StepExplainer } from '@/components/StepExplainer';
 import { FinalReportModal } from '@/components/FinalReportModal';
 
 export default function Dashboard() {
-  const { lastEvent, isConnected, clearEvents } = useEventStream();
+  const { lastEvent, isConnected, clearEvents, playDemoEvents, isDemoMode } = useEventStream();
   const [events, setEvents] = useState<AgentEvent[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<AgentEvent | null>(null);
   const [activeEvent, setActiveEvent] = useState<AgentEvent | undefined>(undefined);
@@ -56,9 +56,18 @@ export default function Dashboard() {
 
       // Check for final output
       if (lastEvent.hop === 'mcp→client' && lastEvent.type === 'mcp_tool_result') {
+        console.log('Final event detected:', lastEvent);
+        console.log('Event data:', lastEvent.data);
+
         if (lastEvent.data && lastEvent.data.content) {
-          setFinalReportContent(lastEvent.data.content);
-          setIsReportModalOpen(true);
+          console.log('Opening final report modal with content length:', lastEvent.data.content.length);
+          // Delay modal opening to ensure the event is visible first
+          setTimeout(() => {
+            setFinalReportContent(lastEvent.data.content);
+            setIsReportModalOpen(true);
+          }, 2000); // 2 second delay to let user see the final event
+        } else {
+          console.warn('No content found in final event data');
         }
       }
     }
@@ -69,7 +78,12 @@ export default function Dashboard() {
 
   return (
     <div className="h-screen w-screen bg-slate-950 text-slate-200 flex flex-col overflow-hidden font-sans selection:bg-blue-500/30">
-      <StartDemoModal isOpen={isDemoModalOpen} onClose={() => setIsDemoModalOpen(false)} />
+      <StartDemoModal
+        isOpen={isDemoModalOpen}
+        onClose={() => setIsDemoModalOpen(false)}
+        isDemoMode={isDemoMode}
+        onStartDemo={playDemoEvents}
+      />
       <FinalReportModal
         isOpen={isReportModalOpen}
         onClose={() => setIsReportModalOpen(false)}

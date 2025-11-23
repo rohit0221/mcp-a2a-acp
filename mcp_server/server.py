@@ -44,6 +44,9 @@ async def call_agent(task: str, api_key: str = None) -> str:
     """
     print(f"[MCP] Received tool call: call_agent with task='{task}'", file=sys.stderr)
     
+    # Small delay to ensure WebSocket connections are established
+    await asyncio.sleep(0.5)
+    
     # Emit tool call event
     emit_event(
         "mcp_tool_call", 
@@ -53,7 +56,7 @@ async def call_agent(task: str, api_key: str = None) -> str:
     )
     
     # Artificial delay to allow the visualization to show the "Client -> MCP" step
-    await asyncio.sleep(2.5)
+    await asyncio.sleep(3.0)
     
     try:
         async with httpx.AsyncClient(timeout=120.0) as httpx_client:

@@ -12,6 +12,8 @@ cd ..
 echo.
 echo System is running!
 echo 1. Open Dashboard: http://localhost:3000
-echo 2. Run Demo Client: .venv\Scripts\python demo_client.py
+echo 2. Click "Start Demo" to begin (this will start the MCP server)
+echo.
+echo Note: The MCP WebSocket will connect when you start the first demo.
 echo.
 pause
