@@ -1,4 +1,4 @@
-# A2A Visualization Demo
+# MCP-A2A Visualization Demo
 
 This project demonstrates a multi-agent system using the **Model Context Protocol (MCP)** and **Agent-to-Agent (A2A)** protocol, visualized in real-time.
 

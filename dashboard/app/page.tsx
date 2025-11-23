@@ -93,7 +93,7 @@ export default function Dashboard() {
           </div>
           <div>
             <h1 className="font-bold text-xl tracking-tight text-white">
-              A2A <span className="text-slate-500 font-medium">Visualization</span>
+              MCP-A2A <span className="text-slate-500 font-medium">Visualization</span>
             </h1>
             <div className="flex items-center gap-2 text-[10px] text-slate-500 font-mono uppercase tracking-wider">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />

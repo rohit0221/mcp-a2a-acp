@@ -1,5 +1,5 @@
 @echo off
-echo Starting A2A Visualization Demo System...
+echo Starting MCP-A2A Visualization Demo System...
 
 start "Writer Agent (Port 8002)" cmd /k ".venv\Scripts\python backend/writer_agent.py"
 start "Researcher Agent (Port 8001)" cmd /k ".venv\Scripts\python backend/researcher_agent.py"
