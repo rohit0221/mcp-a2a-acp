@@ -36,13 +36,6 @@ export function FlowDiagram({ activeEvent, isConnected }: FlowDiagramProps) {
         return '#374151'; // Default gray
     };
 
-    const isPathActive = (from: string, to: string) => {
-        if (!activeEvent) return false;
-        const hop = activeEvent.hop.toLowerCase();
-        const path = `${from}→${to}`.toLowerCase();
-        return hop === path;
-    };
-
     return (
         <div className="w-full h-full bg-slate-950 relative overflow-hidden flex items-center justify-center">
             {/* Grid Background */}
@@ -73,11 +66,11 @@ export function FlowDiagram({ activeEvent, isConnected }: FlowDiagramProps) {
                 </defs>
 
                 {/* Connections (Rendered first so they appear behind nodes) */}
-                <Connection from="CLIENT" to="MCP" active={isPathActive('client', 'mcp') || isPathActive('mcp', 'client')} transport="stdio" />
-                <Connection from="MCP" to="RESEARCHER" active={isPathActive('mcp', 'researcher') || isPathActive('researcher', 'mcp')} transport="http" />
-                <Connection from="RESEARCHER" to="WRITER" active={isPathActive('researcher', 'writer') || isPathActive('writer', 'researcher')} transport="http" />
-                <Connection from="RESEARCHER" to="OPENAI" active={isPathActive('researcher', 'openai') || isPathActive('openai', 'researcher')} transport="http" />
-                <Connection from="WRITER" to="OPENAI" active={isPathActive('writer', 'openai') || isPathActive('openai', 'writer')} transport="http" />
+                <Connection from="CLIENT" to="MCP" activeEvent={activeEvent} transport="stdio" />
+                <Connection from="MCP" to="RESEARCHER" activeEvent={activeEvent} transport="http" />
+                <Connection from="RESEARCHER" to="WRITER" activeEvent={activeEvent} transport="http" />
+                <Connection from="RESEARCHER" to="OPENAI" activeEvent={activeEvent} transport="http" />
+                <Connection from="WRITER" to="OPENAI" activeEvent={activeEvent} transport="http" />
 
                 {/* Nodes (Rendered via foreignObject to stay in sync with SVG coordinates) */}
                 {Object.entries(NODES).map(([key, node]) => (
@@ -121,9 +114,18 @@ export function FlowDiagram({ activeEvent, isConnected }: FlowDiagramProps) {
     );
 }
 
-function Connection({ from, to, active, transport }: { from: string; to: string; active: boolean; transport: string }) {
-    const start = NODES[from as keyof typeof NODES];
-    const end = NODES[to as keyof typeof NODES];
+function Connection({ from, to, activeEvent, transport }: { from: string; to: string; activeEvent?: AgentEvent; transport: string }) {
+    // Determine if this connection is active and in which direction
+    const isForward = activeEvent?.hop?.toLowerCase() === `${from}→${to}`.toLowerCase();
+    const isReverse = activeEvent?.hop?.toLowerCase() === `${to}→${from}`.toLowerCase();
+    const isActive = isForward || isReverse;
+
+    // Swap start/end if reverse flow
+    const startNode = NODES[from as keyof typeof NODES];
+    const endNode = NODES[to as keyof typeof NODES];
+
+    const start = isReverse ? endNode : startNode;
+    const end = isReverse ? startNode : endNode;
 
     return (
         <g>
@@ -132,16 +134,16 @@ function Connection({ from, to, active, transport }: { from: string; to: string;
                 y1={start.y}
                 x2={end.x}
                 y2={end.y}
-                stroke={active ? "#3b82f6" : "#475569"}
-                strokeWidth={active ? 4 : 2}
+                stroke={isActive ? "#3b82f6" : "#475569"}
+                strokeWidth={isActive ? 4 : 2}
                 strokeDasharray={transport === 'stdio' ? "8,8" : "none"}
-                markerEnd={active ? "url(#arrowhead-active)" : "url(#arrowhead)"}
+                markerEnd={isActive ? "url(#arrowhead-active)" : "url(#arrowhead)"}
                 animate={{
-                    stroke: active ? "#3b82f6" : "#475569",
-                    strokeWidth: active ? 4 : 2
+                    stroke: isActive ? "#3b82f6" : "#475569",
+                    strokeWidth: isActive ? 4 : 2
                 }}
             />
-            {active && (
+            {isActive && (
                 <motion.circle
                     r="8"
                     fill="#60a5fa"

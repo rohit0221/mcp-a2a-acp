@@ -15,6 +15,7 @@ import {
 } from "react-resizable-panels";
 
 import { StartDemoModal } from '@/components/StartDemoModal';
+import { StepExplainer } from '@/components/StepExplainer';
 
 export default function Dashboard() {
   const { events, isConnected, clearEvents } = useEventStream();
@@ -110,6 +111,7 @@ export default function Dashboard() {
 
               {/* Flow Diagram */}
               <Panel defaultSize={75} minSize={30} className="relative">
+                <StepExplainer event={displayEvent || null} />
                 <FlowDiagram activeEvent={displayEvent} isConnected={isConnected} />
                 <div className="absolute top-6 left-6 pointer-events-none">
                   <h2 className="text-2xl font-bold text-slate-200/20 tracking-tight">System Architecture</h2>
