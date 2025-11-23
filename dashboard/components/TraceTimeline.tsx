@@ -19,17 +19,18 @@ interface TraceTimelineProps {
     events: AgentEvent[];
     onSelectEvent: (event: AgentEvent) => void;
     selectedEventId?: string;
+    activeEventId?: string;
 }
 
-export function TraceTimeline({ events, onSelectEvent, selectedEventId }: TraceTimelineProps) {
+export function TraceTimeline({ events, onSelectEvent, selectedEventId, activeEventId }: TraceTimelineProps) {
     const scrollRef = useRef<HTMLDivElement>(null);
 
-    // Auto-scroll to bottom
+    // Auto-scroll to bottom when new events arrive
     useEffect(() => {
         if (scrollRef.current) {
             scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
         }
-    }, [events]);
+    }, [events.length]); // Only scroll on length change (new events)
 
     const getIcon = (event: AgentEvent) => {
         switch (event.source) {
@@ -53,66 +54,82 @@ export function TraceTimeline({ events, onSelectEvent, selectedEventId }: TraceT
                 </span>
             </div>
 
-            <div ref={scrollRef} className="flex-1 overflow-y-auto p-3 space-y-3">
-                {events.map((event) => (
-                    <div
-                        key={event.id}
-                        onClick={() => onSelectEvent(event)}
-                        className={cn(
-                            "p-4 rounded-xl cursor-pointer transition-all border shadow-sm relative overflow-hidden group",
-                            selectedEventId === event.id
-                                ? "bg-blue-900/20 border-blue-500/50 shadow-blue-900/20"
-                                : "bg-slate-800/40 hover:bg-slate-800/60 border-slate-700/50 hover:border-slate-600"
-                        )}
-                    >
-                        {/* Active Indicator */}
-                        {selectedEventId === event.id && (
-                            <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500" />
-                        )}
+            <div ref={scrollRef} className="flex-1 overflow-y-auto p-3 space-y-3 scroll-smooth">
+                {events.map((event) => {
+                    const isSelected = selectedEventId === event.id;
+                    const isActive = activeEventId === event.id;
 
-                        <div className="flex justify-between items-start mb-2">
-                            <div className="flex items-center gap-2">
-                                <span className={cn(
-                                    "text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider",
-                                    event.source === 'MCP' && "bg-emerald-900/30 text-emerald-400 border border-emerald-500/20",
-                                    event.source === 'RESEARCHER' && "bg-blue-900/30 text-blue-400 border border-blue-500/20",
-                                    event.source === 'WRITER' && "bg-indigo-900/30 text-indigo-400 border border-indigo-500/20",
-                                    event.source === 'OPENAI' && "bg-purple-900/30 text-purple-400 border border-purple-500/20"
-                                )}>
-                                    {event.source}
-                                </span>
-                                <span className="text-xs text-slate-500 font-mono">
-                                    {format(new Date(event.timestamp), 'HH:mm:ss.SSS')}
-                                </span>
+                    return (
+                        <div
+                            key={event.id}
+                            onClick={() => onSelectEvent(event)}
+                            className={cn(
+                                "p-4 rounded-xl cursor-pointer transition-all border shadow-sm relative overflow-hidden group",
+                                isSelected
+                                    ? "bg-blue-900/20 border-blue-500/50 shadow-blue-900/20"
+                                    : isActive
+                                        ? "bg-slate-800/60 border-yellow-500/50 shadow-yellow-900/10"
+                                        : "bg-slate-800/40 hover:bg-slate-800/60 border-slate-700/50 hover:border-slate-600"
+                            )}
+                        >
+                            {/* Active/Selected Indicators */}
+                            {isSelected && (
+                                <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500" />
+                            )}
+                            {isActive && !isSelected && (
+                                <div className="absolute left-0 top-0 bottom-0 w-1 bg-yellow-500 animate-pulse" />
+                            )}
+
+                            <div className="flex justify-between items-start mb-2">
+                                <div className="flex items-center gap-2">
+                                    <span className={cn(
+                                        "text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider",
+                                        event.source === 'MCP' && "bg-emerald-900/30 text-emerald-400 border border-emerald-500/20",
+                                        event.source === 'RESEARCHER' && "bg-blue-900/30 text-blue-400 border border-blue-500/20",
+                                        event.source === 'WRITER' && "bg-indigo-900/30 text-indigo-400 border border-indigo-500/20",
+                                        event.source === 'OPENAI' && "bg-purple-900/30 text-purple-400 border border-purple-500/20"
+                                    )}>
+                                        {event.source}
+                                    </span>
+                                    <span className="text-xs text-slate-500 font-mono">
+                                        {format(new Date(event.timestamp), 'HH:mm:ss.SSS')}
+                                    </span>
+                                </div>
+                                {isActive && (
+                                    <span className="flex h-2 w-2">
+                                        <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-yellow-400 opacity-75"></span>
+                                        <span className="relative inline-flex rounded-full h-2 w-2 bg-yellow-500"></span>
+                                    </span>
+                                )}
                             </div>
-                        </div>
 
-                        <div className="flex items-center gap-3 text-slate-200 font-semibold text-base mb-2">
-                            {getIcon(event)}
-                            <span>{event.type}</span>
-                        </div>
-
-                        <div className="flex items-center gap-2 text-xs text-slate-400 bg-slate-950/30 p-2 rounded-lg border border-slate-800/50">
-                            <span className="font-mono text-slate-500">{event.hop.split('→')[0]}</span>
-                            <ArrowRight className="w-3 h-3 text-slate-600" />
-                            <span className="font-mono text-slate-300">{event.hop.split('→')[1]}</span>
-                        </div>
-
-                        {event.latency_ms && (
-                            <div className="mt-2 flex items-center gap-1.5 text-xs text-amber-500/90 font-medium">
-                                <Clock className="w-3 h-3" />
-                                <span>{event.latency_ms}ms</span>
+                            <div className="flex items-center gap-3 text-slate-200 font-semibold text-base mb-2">
+                                {getIcon(event)}
+                                <span>{event.type}</span>
                             </div>
-                        )}
 
-                        {event.type === 'error' && (
-                            <div className="mt-3 text-xs text-red-300 flex items-start gap-2 bg-red-950/30 p-2 rounded border border-red-900/50">
-                                <AlertCircle className="w-4 h-4 mt-0.5 shrink-0 text-red-500" />
-                                <span className="break-words">{event.data.message}</span>
+                            <div className="flex items-center gap-2 text-xs text-slate-400 bg-slate-950/30 p-2 rounded-lg border border-slate-800/50">
+                                <span className="font-mono text-slate-500">{event.hop.split('→')[0]}</span>
+                                <ArrowRight className="w-3 h-3 text-slate-600" />
+                                <span className="font-mono text-slate-300">{event.hop.split('→')[1]}</span>
                             </div>
-                        )}
-                    </div>
-                ))}
+
+                            {event.latency_ms && (
+                                <div className="mt-2 flex items-center gap-1.5 text-xs text-amber-500/90 font-medium">
+                                    <Clock className="w-3 h-3" />
+                                    <span>{event.latency_ms}ms</span>
+                                </div>
+                            )}
+
+                            {event.type === 'error' && (
+                                <div className="mt-3 text-xs text-red-300 flex items-start gap-2 bg-red-950/30 p-2 rounded border border-red-900/50">
+                                    <AlertCircle className="w-4 h-4 mt-0.5 shrink-0 text-red-500" />
+                                    <span className="break-words">{event.data.message}</span>
+                                </div>
+                            )}
+                        </div>
+                    );
+                })}
             </div>
         </div>
     );

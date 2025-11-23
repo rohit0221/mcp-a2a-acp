@@ -31,7 +31,7 @@ export default function Dashboard() {
 
       const timer = setTimeout(() => {
         setActiveEvent(undefined);
-      }, 2000);
+      }, 4000);
       return () => clearTimeout(timer);
     }
   }, [events, selectedEvent]);
@@ -98,6 +98,7 @@ export default function Dashboard() {
               events={events}
               onSelectEvent={setSelectedEvent}
               selectedEventId={selectedEvent?.id}
+              activeEventId={activeEvent?.id}
             />
           </Panel>
 
