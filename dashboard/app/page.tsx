@@ -7,7 +7,12 @@ import { FlowDiagram } from '@/components/FlowDiagram';
 import { MessageInspector } from '@/components/MessageInspector';
 import { EventStream } from '@/components/EventStream';
 import { AgentEvent } from '@/lib/types';
-import { Activity, Play, Trash2, Zap } from 'lucide-react';
+import { Activity, Play, Trash2, GripVertical } from 'lucide-react';
+import {
+  PanelResizeHandle,
+  Panel,
+  PanelGroup,
+} from "react-resizable-panels";
 
 export default function Dashboard() {
   const { events, isConnected, clearEvents } = useEventStream();
@@ -20,7 +25,6 @@ export default function Dashboard() {
       const latest = events[events.length - 1];
       setActiveEvent(latest);
 
-      // Clear active animation after 2 seconds
       const timer = setTimeout(() => {
         setActiveEvent(undefined);
       }, 2000);
@@ -31,7 +35,7 @@ export default function Dashboard() {
   return (
     <div className="h-screen w-screen bg-slate-950 text-slate-200 flex flex-col overflow-hidden font-sans selection:bg-blue-500/30">
       {/* Header */}
-      <header className="h-16 border-b border-slate-800 flex items-center justify-between px-6 bg-slate-900/80 backdrop-blur-md z-50">
+      <header className="h-16 border-b border-slate-800 flex items-center justify-between px-6 bg-slate-900/80 backdrop-blur-md z-50 shrink-0">
         <div className="flex items-center gap-4">
           <div className="bg-gradient-to-br from-blue-600 to-indigo-600 p-2 rounded-xl shadow-lg shadow-blue-900/20">
             <Activity className="w-5 h-5 text-white" />
@@ -48,7 +52,6 @@ export default function Dashboard() {
         </div>
 
         <div className="flex items-center gap-6">
-          {/* Connection Status */}
           <div className="flex items-center gap-4 text-xs font-medium bg-slate-800/50 px-4 py-2 rounded-full border border-slate-700/50">
             <StatusBadge label="MCP Server" connected={isConnected.MCP} />
             <div className="w-px h-3 bg-slate-700" />
@@ -57,7 +60,6 @@ export default function Dashboard() {
             <StatusBadge label="Writer" connected={isConnected.WRITER} />
           </div>
 
-          {/* Controls */}
           <div className="flex items-center gap-3">
             <button
               onClick={clearEvents}
@@ -76,41 +78,60 @@ export default function Dashboard() {
         </div>
       </header>
 
-      {/* Main Content */}
-      <div className="flex-1 flex overflow-hidden relative">
+      {/* Resizable Main Content */}
+      <div className="flex-1 overflow-hidden">
+        <PanelGroup direction="horizontal">
 
-        {/* Left: Timeline */}
-        <div className="w-96 shrink-0 z-20 shadow-2xl">
-          <TraceTimeline
-            events={events}
-            onSelectEvent={setSelectedEvent}
-            selectedEventId={selectedEvent?.id}
-          />
-        </div>
+          {/* Left: Timeline */}
+          <Panel defaultSize={20} minSize={15} maxSize={30} className="bg-slate-900/30">
+            <TraceTimeline
+              events={events}
+              onSelectEvent={setSelectedEvent}
+              selectedEventId={selectedEvent?.id}
+            />
+          </Panel>
 
-        {/* Center: Flow & Stream */}
-        <div className="flex-1 flex flex-col relative z-10">
-          <div className="flex-1 relative">
-            <FlowDiagram activeEvent={activeEvent} isConnected={isConnected} />
+          <PanelResizeHandle className="w-1.5 bg-slate-900 hover:bg-blue-500/50 transition-colors flex items-center justify-center group">
+            <GripVertical className="w-3 h-3 text-slate-700 group-hover:text-blue-400" />
+          </PanelResizeHandle>
 
-            {/* Overlay Title */}
-            <div className="absolute top-6 left-6 pointer-events-none">
-              <h2 className="text-2xl font-bold text-slate-200/20 tracking-tight">System Architecture</h2>
-            </div>
-          </div>
+          {/* Center: Flow & Stream */}
+          <Panel defaultSize={55} minSize={30}>
+            <PanelGroup direction="vertical">
 
-          <div className="h-64 border-t border-slate-800 bg-slate-950/80 backdrop-blur-sm">
-            <EventStream events={events} />
-          </div>
-        </div>
+              {/* Flow Diagram */}
+              <Panel defaultSize={75} minSize={30} className="relative">
+                <FlowDiagram activeEvent={activeEvent} isConnected={isConnected} />
+                <div className="absolute top-6 left-6 pointer-events-none">
+                  <h2 className="text-2xl font-bold text-slate-200/20 tracking-tight">System Architecture</h2>
+                </div>
+              </Panel>
 
-        {/* Right: Inspector */}
-        <div className="w-[450px] shrink-0 z-20 shadow-2xl border-l border-slate-800">
-          <MessageInspector
-            event={selectedEvent}
-            onClose={() => setSelectedEvent(null)}
-          />
-        </div>
+              <PanelResizeHandle className="h-1.5 bg-slate-900 hover:bg-blue-500/50 transition-colors flex items-center justify-center group">
+                <div className="w-8 h-1 rounded-full bg-slate-700 group-hover:bg-blue-400" />
+              </PanelResizeHandle>
+
+              {/* Event Stream */}
+              <Panel defaultSize={25} minSize={10} className="bg-slate-950/80 backdrop-blur-sm border-t border-slate-800">
+                <EventStream events={events} />
+              </Panel>
+
+            </PanelGroup>
+          </Panel>
+
+          <PanelResizeHandle className="w-1.5 bg-slate-900 hover:bg-blue-500/50 transition-colors flex items-center justify-center group">
+            <GripVertical className="w-3 h-3 text-slate-700 group-hover:text-blue-400" />
+          </PanelResizeHandle>
+
+          {/* Right: Inspector */}
+          <Panel defaultSize={25} minSize={20} maxSize={40} className="bg-slate-900/50 border-l border-slate-800">
+            <MessageInspector
+              event={selectedEvent}
+              onClose={() => setSelectedEvent(null)}
+            />
+          </Panel>
+
+        </PanelGroup>
       </div>
     </div>
   );
