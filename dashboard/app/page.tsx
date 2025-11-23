@@ -14,14 +14,17 @@ import {
   PanelGroup,
 } from "react-resizable-panels";
 
+import { StartDemoModal } from '@/components/StartDemoModal';
+
 export default function Dashboard() {
   const { events, isConnected, clearEvents } = useEventStream();
   const [selectedEvent, setSelectedEvent] = useState<AgentEvent | null>(null);
   const [activeEvent, setActiveEvent] = useState<AgentEvent | undefined>(undefined);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Auto-select latest event for flow diagram animation
+  // Auto-select latest event for flow diagram animation ONLY if no event is explicitly selected
   useEffect(() => {
-    if (events.length > 0) {
+    if (events.length > 0 && !selectedEvent) {
       const latest = events[events.length - 1];
       setActiveEvent(latest);
 
@@ -30,10 +33,15 @@ export default function Dashboard() {
       }, 2000);
       return () => clearTimeout(timer);
     }
-  }, [events]);
+  }, [events, selectedEvent]);
+
+  // If an event is selected, force it as the active event for the diagram
+  const displayEvent = selectedEvent || activeEvent;
 
   return (
     <div className="h-screen w-screen bg-slate-950 text-slate-200 flex flex-col overflow-hidden font-sans selection:bg-blue-500/30">
+      <StartDemoModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+
       {/* Header */}
       <header className="h-16 border-b border-slate-800 flex items-center justify-between px-6 bg-slate-900/80 backdrop-blur-md z-50 shrink-0">
         <div className="flex items-center gap-4">
@@ -69,6 +77,7 @@ export default function Dashboard() {
               <Trash2 className="w-4 h-4" />
             </button>
             <button
+              onClick={() => setIsModalOpen(true)}
               className="flex items-center gap-2 bg-white text-slate-950 px-4 py-2 rounded-lg text-sm font-bold hover:bg-blue-50 transition-all shadow-lg shadow-blue-900/10 active:scale-95"
             >
               <Play className="w-4 h-4 text-blue-600" />
@@ -101,7 +110,7 @@ export default function Dashboard() {
 
               {/* Flow Diagram */}
               <Panel defaultSize={75} minSize={30} className="relative">
-                <FlowDiagram activeEvent={activeEvent} isConnected={isConnected} />
+                <FlowDiagram activeEvent={displayEvent} isConnected={isConnected} />
                 <div className="absolute top-6 left-6 pointer-events-none">
                   <h2 className="text-2xl font-bold text-slate-200/20 tracking-tight">System Architecture</h2>
                 </div>

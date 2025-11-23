@@ -4,10 +4,16 @@ from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 
 async def run():
-    # Get user input
     print("\n--- Protocol-Native Agent Demo ---")
-    task = input("Enter the topic you want to research: ").strip()
-    if not task:
+    
+    # Get topic from args or input
+    if len(sys.argv) > 1:
+        topic = sys.argv[1]
+        print(f"Using topic from arguments: {topic}")
+    else:
+        topic = input("Enter the topic you want to research: ").strip()
+
+    if not topic:
         print("No topic entered. Exiting.")
         return
 
@@ -26,14 +32,17 @@ async def run():
 
             # List available tools
             tools = await session.list_tools()
-            print(f"[Client] Connected. Found tool: {tools.tools[0].name}")
+            if tools.tools:
+                print(f"[Client] Connected. Found tool: {tools.tools[0].name}")
+            else:
+                print("[Client] Connected but no tools found.")
 
             # Call the agent tool
-            print(f"[Client] Sending task to Agent Network: '{task}'")
+            print(f"[Client] Sending task to Agent Network: '{topic}'")
             print("[Client] Waiting for agents to complete work (this may take a few seconds)...\n")
             
             try:
-                result = await session.call_tool("call_agent", arguments={"task": task})
+                result = await session.call_tool("call_agent", arguments={"task": topic})
                 print("\n" + "="*40)
                 print("       FINAL AGENT OUTPUT       ")
                 print("="*40 + "\n")
