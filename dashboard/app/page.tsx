@@ -20,7 +20,7 @@ import { StepExplainer } from '@/components/StepExplainer';
 import { FinalReportModal } from '@/components/FinalReportModal';
 
 export default function Dashboard() {
-  const { lastEvent, isConnected, clearEvents, playDemoEvents, isDemoMode } = useEventStream();
+  const { lastEvent, isConnected, clearEvents } = useEventStream();
   const [events, setEvents] = useState<AgentEvent[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<AgentEvent | null>(null);
   const [activeEvent, setActiveEvent] = useState<AgentEvent | undefined>(undefined);
@@ -78,12 +78,7 @@ export default function Dashboard() {
 
   return (
     <div className="h-screen w-screen bg-slate-950 text-slate-200 flex flex-col overflow-hidden font-sans selection:bg-blue-500/30">
-      <StartDemoModal
-        isOpen={isDemoModalOpen}
-        onClose={() => setIsDemoModalOpen(false)}
-        isDemoMode={isDemoMode}
-        onStartDemo={playDemoEvents}
-      />
+      <StartDemoModal isOpen={isDemoModalOpen} onClose={() => setIsDemoModalOpen(false)} />
       <FinalReportModal
         isOpen={isReportModalOpen}
         onClose={() => setIsReportModalOpen(false)}

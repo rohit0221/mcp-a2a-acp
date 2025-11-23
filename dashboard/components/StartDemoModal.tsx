@@ -4,11 +4,9 @@ import { X, Play, Loader2 } from 'lucide-react';
 interface StartDemoModalProps {
     isOpen: boolean;
     onClose: () => void;
-    isDemoMode?: boolean;
-    onStartDemo?: () => void;
 }
 
-export function StartDemoModal({ isOpen, onClose, isDemoMode, onStartDemo }: StartDemoModalProps) {
+export function StartDemoModal({ isOpen, onClose }: StartDemoModalProps) {
     const [topic, setTopic] = useState('');
     const [apiKey, setApiKey] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -17,15 +15,6 @@ export function StartDemoModal({ isOpen, onClose, isDemoMode, onStartDemo }: Sta
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-
-        // Demo mode: Just play sample events
-        if (isDemoMode) {
-            onStartDemo?.();
-            onClose();
-            return;
-        }
-
-        // Production mode: Call backend API
         if (!topic.trim()) return;
 
         setIsLoading(true);
@@ -45,84 +34,67 @@ export function StartDemoModal({ isOpen, onClose, isDemoMode, onStartDemo }: Sta
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-            <div className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl w-full max-w-md animate-in fade-in zoom-in-95 duration-200">
-                {/* Header */}
-                <div className="flex justify-between items-center p-6 border-b border-slate-800">
-                    <div>
-                        <h2 className="text-xl font-bold text-white">
-                            {isDemoMode ? 'Run Demo Visualization' : 'Start Research Demo'}
-                        </h2>
-                        <p className="text-sm text-slate-400 mt-1">
-                            {isDemoMode
-                                ? 'Watch a pre-recorded demo of the agent workflow'
-                                : 'Enter a topic to research using the agent network'}
-                        </p>
-                    </div>
-                    <button
-                        onClick={onClose}
-                        className="p-2 hover:bg-slate-800 rounded-lg transition-colors text-slate-400 hover:text-white"
-                    >
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl w-full max-w-md p-6 animate-in fade-in zoom-in-95 duration-200">
+                <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-xl font-bold text-white">Start New Research</h2>
+                    <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors">
                         <X className="w-5 h-5" />
                     </button>
                 </div>
 
-                {/* Form */}
-                <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                    {!isDemoMode && (
-                        <>
-                            <div>
-                                <label htmlFor="topic" className="block text-sm font-medium text-slate-300 mb-2">
-                                    Research Topic
-                                </label>
-                                <input
-                                    id="topic"
-                                    type="text"
-                                    value={topic}
-                                    onChange={(e) => setTopic(e.target.value)}
-                                    placeholder="e.g., Vector databases, Quantum computing..."
-                                    className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                                    disabled={isLoading}
-                                />
-                            </div>
+                <form onSubmit={handleSubmit}>
+                    <div className="mb-4">
+                        <label className="block text-sm font-medium text-slate-400 mb-2">
+                            Research Topic
+                        </label>
+                        <input
+                            type="text"
+                            value={topic}
+                            onChange={(e) => setTopic(e.target.value)}
+                            placeholder="e.g., Quantum Computing, Tesla, Mars Colonization"
+                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
+                            autoFocus
+                        />
+                    </div>
 
-                            <div>
-                                <label htmlFor="apiKey" className="block text-sm font-medium text-slate-300 mb-2">
-                                    OpenAI API Key (Optional)
-                                </label>
-                                <input
-                                    id="apiKey"
-                                    type="password"
-                                    value={apiKey}
-                                    onChange={(e) => setApiKey(e.target.value)}
-                                    placeholder="sk-..."
-                                    className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                                    disabled={isLoading}
-                                />
-                                <p className="text-xs text-slate-500 mt-1">
-                                    Leave empty to use server's API key
-                                </p>
-                            </div>
-                        </>
-                    )}
+                    <div className="mb-6">
+                        <label className="block text-sm font-medium text-slate-400 mb-2">
+                            OpenAI API Key (Optional)
+                        </label>
+                        <input
+                            type="password"
+                            value={apiKey}
+                            onChange={(e) => setApiKey(e.target.value)}
+                            placeholder="sk-..."
+                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all font-mono text-sm"
+                        />
+                        <p className="text-[10px] text-slate-500 mt-2">
+                            Leave empty to use the server's configured key.
+                        </p>
+                    </div>
 
-                    <button
-                        type="submit"
-                        disabled={isLoading || (!isDemoMode && !topic.trim())}
-                        className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 disabled:from-slate-700 disabled:to-slate-700 text-white px-6 py-3 rounded-lg font-medium transition-all shadow-lg shadow-blue-900/20 disabled:shadow-none active:scale-95 disabled:cursor-not-allowed"
-                    >
-                        {isLoading ? (
-                            <>
-                                <Loader2 className="w-5 h-5 animate-spin" />
-                                Starting...
-                            </>
-                        ) : (
-                            <>
-                                <Play className="w-5 h-5" />
-                                {isDemoMode ? 'Play Demo' : 'Start Research'}
-                            </>
-                        )}
-                    </button>
+                    <div className="flex justify-end gap-3">
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="px-4 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors font-medium text-sm"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={!topic.trim() || isLoading}
+                            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-6 py-2 rounded-lg font-bold transition-all shadow-lg shadow-blue-900/20"
+                        >
+                            {isLoading ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                                <Play className="w-4 h-4 fill-current" />
+                            )}
+                            Start Demo
+                        </button>
+                    </div>
                 </form>
             </div>
         </div>
